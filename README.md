@@ -55,7 +55,16 @@ bumping the `?v=` query in `index.html` AND `sw.js` SHELL list AND the
 `CACHE` name in `sw.js`** — currently v5 / `sis-v5`. Skipping this serves
 stale files and looks like a haunted bug.
 
-## Deploy (when approved)
+## Deploy
 
-GitHub Pages, same as part107-study: repo → Settings → Pages → main branch.
-No staging/noindex machinery needed — personal tool, no client gate.
+**Live at https://ndlawman.github.io/ship-it-sunday/** (since Jul 31, 2026).
+GitHub Pages publishes the **`gh-pages` branch** (auto-enabled by pushing it).
+To deploy changes — bump `?v=` versions first (see above), then:
+
+```
+git push origin main && git push origin main:gh-pages --force-with-lease
+```
+
+Both pushes matter: `main` is the source of record, `gh-pages` is what the
+site serves. GitHub Desktop works for the `main` push, but the `gh-pages`
+mirror push needs the command line (or ask Claude).
