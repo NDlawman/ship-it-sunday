@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ship It Sunday — Photoshop, one real image a week</title>
+<meta name="description" content="Jay's 8-week project-first Photoshop plan: ship one real image every Sunday.">
+<meta name="theme-color" content="#1e1e1e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=5">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="brand">
+    <img src="icons/icon.svg" alt="" width="34" height="34" aria-hidden="true">
+    <div>
+      <h1>Ship It Sunday</h1>
+      <p class="tag">Photoshop. One real image a week.</p>
+    </div>
+  </div>
+  <div class="dash">
+    <div class="ring-wrap" id="ringWrap" title="Weeks shipped">
+      <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
+        <circle class="ring-bg" cx="22" cy="22" r="19"/>
+        <circle class="ring-fg" id="ringFg" cx="22" cy="22" r="19"/>
+      </svg>
+      <span class="ring-label" id="ringLabel">0/8</span>
+    </div>
+    <div class="dash-stats">
+      <span id="streakStat" class="stat">🔥 0-week streak</span>
+      <span id="sundayStat" class="stat">Ships Sunday</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button class="tab active" role="tab" aria-selected="true" data-view="plan"  id="tab-plan">Plan</button>
+  <button class="tab" role="tab" aria-selected="false" data-view="timer" id="tab-timer">Day One</button>
+  <button class="tab" role="tab" aria-selected="false" data-view="rep"   id="tab-rep">Monday Rep</button>
+  <button class="tab" role="tab" aria-selected="false" data-view="log"   id="tab-log">Ship Log</button>
+</nav>
+
+<main id="main">
+  <!-- PLAN -->
+  <section class="view active" id="view-plan" role="tabpanel" aria-labelledby="tab-plan">
+    <p class="rules-strip">
+      <strong>The three rules:</strong> pass the publish bar · Monday Rep before new work · never touch the original.
+    </p>
+    <p class="rules-strip">
+      <strong>How a week works:</strong> Mon — 10-min rep · midweek — watch the <em>Watch first</em> lesson (just watch) · Sunday — do the project, with the <em>When stuck</em> videos on standby. Week 1 needs zero prep: the Day One tab walks you through cold.
+    </p>
+    <div id="weeks" class="weeks"></div>
+  </section>
+
+  <!-- DAY ONE TIMER -->
+  <section class="view" id="view-timer" role="tabpanel" aria-labelledby="tab-timer">
+    <div class="timer-card">
+      <p class="eyebrow">Guided first session · chess-clock style</p>
+      <h2 id="timerStage">Pick your photo</h2>
+      <p id="timerDetail" class="timer-detail"></p>
+      <div class="timer-clock" id="timerClock">00:00</div>
+      <p class="timer-guide" id="timerGuide">Guide: ~5 min — a proportion, not a deadline. The clock only counts up.</p>
+      <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+      <p class="timer-progress" id="timerProgress">Step 1 of 7</p>
+      <div class="timer-controls">
+        <button class="btn ghost" id="timerPrev" aria-label="Previous step">← Back</button>
+        <button class="btn ghost" id="timerToggle">Start</button>
+        <button class="btn primary" id="timerDone">Done ✓ — next</button>
+      </div>
+      <ol class="timer-list" id="timerList"></ol>
+      <div id="timerRecap" class="timer-recap" hidden></div>
+    </div>
+  </section>
+
+  <!-- MONDAY REP -->
+  <section class="view" id="view-rep" role="tabpanel" aria-labelledby="tab-rep">
+    <div class="rep-suggest" id="repSuggest"></div>
+    <p class="rep-hint">Tap a skill each time it shows up in a real edit. The stalest one becomes next Monday's 10-minute rep.</p>
+    <div id="skillList" class="skill-list"></div>
+  </section>
+
+  <!-- SHIP LOG -->
+  <section class="view" id="view-log" role="tabpanel" aria-labelledby="tab-log">
+    <div id="logList" class="log-list"></div>
+    <div class="settings">
+      <h3>Backup</h3>
+      <p class="hint">Your progress lives only on this device. Export a backup now and then.</p>
+      <div class="settings-row">
+        <button class="btn ghost" id="exportBtn">Export progress</button>
+        <label class="btn ghost" for="importFile">Import backup<input type="file" id="importFile" accept=".json" hidden></label>
+        <button class="btn danger" id="resetBtn">Reset everything</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Publish bar modal -->
+<div class="modal-backdrop" id="shipModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shipModalTitle">
+    <h3 id="shipModalTitle">The Publish Bar</h3>
+    <p class="hint">A project isn't shipped until it passes. Be honest — the redo rule exists for a reason.</p>
+    <div id="barChecks"></div>
+    <label class="note-label" for="shipNote">What fought back? (optional, future-you will thank you)</label>
+    <textarea id="shipNote" rows="2" placeholder="e.g. roofline edge kept smearing until I lowered the brush size"></textarea>
+    <div class="modal-actions">
+      <button class="btn ghost" id="shipCancel">Not yet — redo first</button>
+      <button class="btn primary" id="shipConfirm" disabled>SHIP IT 🚀</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<footer class="foot">
+  <p>Plan lives in Jay's Vault → <em>Projects / Photoshop — Ship It Sunday</em>. Videos are free lessons by their creators on YouTube.</p>
+</footer>
+
+<script src="js/data.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+</body>
+</html>
