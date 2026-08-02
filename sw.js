@@ -1,12 +1,12 @@
 /* Ship It Sunday — service worker. Cache-first for the app shell so it
    opens instantly and works offline (videos still need the internet). */
-const CACHE = "sis-v5";
+const CACHE = "sis-v6";
 const SHELL = [
   ".",
   "index.html",
-  "css/styles.css?v=5",
-  "js/data.js?v=5",
-  "js/app.js?v=5",
+  "css/styles.css?v=6",
+  "js/data.js?v=6",
+  "js/app.js?v=6",
   "manifest.webmanifest",
   "icons/icon.svg",
   "icons/icon-192.png",

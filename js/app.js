@@ -164,9 +164,19 @@ function confetti() {
 /* ---------- Day One timer — chess-clock style ----------
    The guide time is shown as a proportion; the clock only counts UP.
    "Done ✓ — next" is the chess slap: records actual time, advances,
-   and keeps the clock running for the next step. No fail state. */
-let tIdx = 0, tElapsed = 0, tRun = null;
+   and keeps the clock running for the next step. No fail state.
+   Elapsed time is anchored to WALL CLOCK (state.live.startedAt), not
+   interval ticks — backgrounding the tab or leaving for Photoshop
+   doesn't stop the clock, and the session survives an app restart. */
+let tIdx = 0, tRun = null;
 state.dayOne = state.dayOne || [];    // [{secs}] per completed step
+state.live = state.live || null;      // {idx, accum, startedAt} — in-flight step
+
+function liveElapsed() {
+  if (!state.live) return 0;
+  const running = state.live.startedAt ? (Date.now() - state.live.startedAt) / 1000 : 0;
+  return Math.max(0, Math.floor(state.live.accum + running));
+}
 
 const clock = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
@@ -179,10 +189,10 @@ function renderTimer() {
   $("#timerDetail").textContent = done
     ? "A publishable photo exists. Head to Plan → Week 1 and hit SHIP. Your times below are self-knowledge, not grades."
     : st.detail;
-  $("#timerGuide").textContent = done ? "" : `Guide: ~${st.mins} min — a proportion, not a deadline. The clock only counts up.`;
+  $("#timerGuide").textContent = done ? "" : `Guide: ~${st.mins} min — a proportion, not a deadline. The clock only counts up (and keeps counting while you're in Photoshop).`;
   $("#timerProgress").textContent = done ? "" : `Step ${tIdx + 1} of ${DAY_ONE_TIMER.length}`;
-  $("#timerClock").textContent = clock(tElapsed);
-  $("#timerFill").style.width = done ? "100%" : Math.min(100, 100 * tElapsed / (st.mins * 60)) + "%";
+  $("#timerClock").textContent = clock(liveElapsed());
+  $("#timerFill").style.width = done ? "100%" : Math.min(100, 100 * liveElapsed() / (st.mins * 60)) + "%";
   $("#timerList").innerHTML = done ? "" : DAY_ONE_TIMER.map((s, i) => {
     const rec = state.dayOne[i];
     return `<li class="${i < tIdx ? "past" : i === tIdx ? "now" : ""}">
@@ -201,29 +211,57 @@ function renderRecap() {
     </tbody></table>
     <button class="btn ghost" id="timerReset">Reset session</button>`;
   $("#timerReset").addEventListener("click", () => {
-    state.dayOne = []; save(); tIdx = 0; tElapsed = 0; stopTimer(); renderTimer();
+    state.dayOne = []; state.live = null; save();
+    tIdx = 0; clearInterval(tRun); tRun = null;
+    $("#timerToggle").textContent = "Start";
+    renderTimer();
   });
 }
 
 function tickTimer() {
-  tElapsed++;
-  $("#timerClock").textContent = clock(tElapsed);
+  $("#timerClock").textContent = clock(liveElapsed());
   const st = DAY_ONE_TIMER[tIdx];
-  $("#timerFill").style.width = Math.min(100, 100 * tElapsed / (st.mins * 60)) + "%";
+  if (st) $("#timerFill").style.width = Math.min(100, 100 * liveElapsed() / (st.mins * 60)) + "%";
 }
-function startTimer() { if (!tRun) { tRun = setInterval(tickTimer, 1000); $("#timerToggle").textContent = "Pause"; } }
-function stopTimer()  { clearInterval(tRun); tRun = null; $("#timerToggle").textContent = "Start"; }
+function startTimer() {
+  if (!state.live) state.live = { idx: tIdx, accum: 0, startedAt: Date.now() };
+  else if (!state.live.startedAt) state.live.startedAt = Date.now();
+  save();
+  if (!tRun) tRun = setInterval(tickTimer, 1000);
+  $("#timerToggle").textContent = "Pause";
+}
+function stopTimer() {
+  if (state.live && state.live.startedAt) {
+    state.live.accum = liveElapsed();
+    state.live.startedAt = null;
+    save();
+  }
+  clearInterval(tRun); tRun = null;
+  $("#timerToggle").textContent = "Start";
+}
 
-$("#timerToggle").addEventListener("click", () => { tRun ? stopTimer() : startTimer(); });
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) tickTimer();   // catch up instantly on return from Photoshop
+});
+
+$("#timerToggle").addEventListener("click", () => {
+  (state.live && state.live.startedAt) ? stopTimer() : startTimer();
+});
 
 $("#timerDone").addEventListener("click", () => {
   if (state.dayOne.length >= DAY_ONE_TIMER.length) return;
-  state.dayOne[tIdx] = { secs: tElapsed }; save();
+  state.dayOne[tIdx] = { secs: liveElapsed() };
   if (tIdx < DAY_ONE_TIMER.length - 1) {
-    tIdx++; tElapsed = 0;
-    startTimer();            // the chess slap: next clock starts immediately
+    tIdx++;
+    state.live = { idx: tIdx, accum: 0, startedAt: Date.now() };  // the chess slap: next clock starts immediately
+    save();
+    if (!tRun) tRun = setInterval(tickTimer, 1000);
+    $("#timerToggle").textContent = "Pause";
   } else {
-    tElapsed = 0; tIdx = DAY_ONE_TIMER.length; stopTimer();
+    tIdx = DAY_ONE_TIMER.length;
+    state.live = null; save();
+    clearInterval(tRun); tRun = null;
+    $("#timerToggle").textContent = "Start";
   }
   renderTimer();
 });
@@ -232,9 +270,9 @@ $("#timerPrev").addEventListener("click", () => {
   if (state.dayOne.length >= DAY_ONE_TIMER.length) return;
   if (tIdx > 0) {
     tIdx--;
-    tElapsed = state.dayOne[tIdx] ? state.dayOne[tIdx].secs : 0;
+    state.live = { idx: tIdx, accum: state.dayOne[tIdx] ? state.dayOne[tIdx].secs : 0, startedAt: null };
     state.dayOne.splice(tIdx);   // redoing a step clears it and everything after
-    save(); renderTimer();
+    save(); stopTimer(); renderTimer();
   }
 });
 
@@ -307,6 +345,13 @@ $("#resetBtn").addEventListener("click", () => {
 function renderAll() { renderDash(); renderWeeks(); renderRep(); renderLog(); }
 tIdx = Math.min(state.dayOne.length, DAY_ONE_TIMER.length - 1);
 if (state.dayOne.length >= DAY_ONE_TIMER.length) tIdx = DAY_ONE_TIMER.length;
+if (state.live && state.live.idx != null && state.dayOne.length < DAY_ONE_TIMER.length) {
+  tIdx = Math.min(state.live.idx, DAY_ONE_TIMER.length - 1);
+  if (state.live.startedAt) {          // was running when the app closed — resume
+    tRun = setInterval(tickTimer, 1000);
+  }
+}
 renderAll(); renderTimer();
+if (tRun) $("#timerToggle").textContent = "Pause";
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
